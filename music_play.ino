@@ -29,7 +29,7 @@ NOTE_G4, NOTE_A4, NOTE_G4, NOTE_FS4, 0,
 NOTE_C4, NOTE_D4, NOTE_G4, NOTE_FS4, NOTE_DS4,
 NOTE_C4, NOTE_D4, 0,
 NOTE_C4, NOTE_D4, NOTE_G4, NOTE_FS4, NOTE_DS4,
-NOTE_C4, NOTE_D4
+NOTE_C4, NOTE_D4, END
 };
 
 // note durations: 8 = quarter note, 4 = 8th note, etc.
@@ -57,7 +57,7 @@ int noteDurations[] = {       //duration of the notes
 4,8,4,4,4,
 4,16,4,
 4,8,4,4,4,
-4,20
+4,20,
 };
 
 int speed=90;  //higher value, slower notes
