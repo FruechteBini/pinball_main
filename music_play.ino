@@ -1,90 +1,103 @@
-//speaker connected to pin 3 and GND.
+#include "Arduino.h"
+#include "SoftwareSerial.h"
+#include "DFRobotDFPlayerMini.h"
 
-// ____initialize music play tool____
-// change the melody and notes, you can play other songs.
-#include"pitches.h"
+SoftwareSerial mySoftwareSerial(10, 11); // RX, TX
+DFRobotDFPlayerMini myDFPlayer;
 
-// notes in the song 'Mukkathe Penne'
-int melody[] = {
-NOTE_D4, NOTE_G4, NOTE_FS4, NOTE_A4,
-NOTE_G4, NOTE_C5, NOTE_AS4, NOTE_A4,                   
-NOTE_FS4, NOTE_G4, NOTE_A4, NOTE_FS4, NOTE_DS4, NOTE_D4,
-NOTE_C4, NOTE_D4,0,                                 
+void printDetail(uint8_t type, int value){
+  switch (type) {
+    case TimeOut:
+      Serial.println(F("Time Out!"));
+      break;
+    case WrongStack:
+      Serial.println(F("Stack Wrong!"));
+      break;
+    case DFPlayerCardInserted:
+      Serial.println(F("Card Inserted!"));
+      break;
+    case DFPlayerCardRemoved:
+      Serial.println(F("Card Removed!"));
+      break;
+    case DFPlayerCardOnline:
+      Serial.println(F("Card Online!"));
+      break;
+    case DFPlayerPlayFinished:
+      Serial.print(F("Number:"));
+      Serial.print(value);
+      Serial.println(F(" Play Finished!"));
+      break;
+    case DFPlayerError:
+      Serial.print(F("DFPlayerError:"));
+      switch (value) {
+        case Busy:
+          Serial.println(F("Card not found"));
+          break;
+        case Sleeping:
+          Serial.println(F("Sleeping"));
+          break;
+        case SerialWrongStack:
+          Serial.println(F("Get Wrong Stack"));
+          break;
+        case CheckSumNotMatch:
+          Serial.println(F("Check Sum Not Match"));
+          break;
+        case FileIndexOut:
+          Serial.println(F("File Index Out of Bound"));
+          break;
+        case FileMismatch:
+          Serial.println(F("Cannot Find File"));
+          break;
+        case Advertise:
+          Serial.println(F("In Advertise"));
+          break;
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
+  }
 
-NOTE_D4, NOTE_G4, NOTE_FS4, NOTE_A4,
-NOTE_G4, NOTE_C5, NOTE_D5, NOTE_C5, NOTE_AS4, NOTE_C5, NOTE_AS4, NOTE_A4,      //29               //8
-NOTE_FS4, NOTE_G4, NOTE_A4, NOTE_FS4, NOTE_DS4, NOTE_D4,
-NOTE_C4, NOTE_D4,0,                                       
-
-NOTE_D4, NOTE_FS4, NOTE_G4, NOTE_A4, NOTE_DS5, NOTE_D5,
-NOTE_C5, NOTE_AS4, NOTE_A4, NOTE_C5,
-NOTE_C4, NOTE_D4, NOTE_DS4, NOTE_FS4, NOTE_D5, NOTE_C5,
-NOTE_AS4, NOTE_A4, NOTE_C5, NOTE_AS4,             //58
-
-NOTE_D4, NOTE_FS4, NOTE_G4, NOTE_A4, NOTE_DS5, NOTE_D5,
-NOTE_C5, NOTE_D5, NOTE_C5, NOTE_AS4, NOTE_C5, NOTE_AS4, NOTE_A4, NOTE_C5, NOTE_G4,
-NOTE_A4, 0, NOTE_AS4, NOTE_A4, 0, NOTE_G4,
-NOTE_G4, NOTE_A4, NOTE_G4, NOTE_FS4, 0,
-
-NOTE_C4, NOTE_D4, NOTE_G4, NOTE_FS4, NOTE_DS4,
-NOTE_C4, NOTE_D4, 0,
-NOTE_C4, NOTE_D4, NOTE_G4, NOTE_FS4, NOTE_DS4,
-NOTE_C4, NOTE_D4, END
-};
-
-// note durations: 8 = quarter note, 4 = 8th note, etc.
-int noteDurations[] = {       //duration of the notes
-8,4,8,4,
-4,4,4,12,
-4,4,4,4,4,4,
-4,16,4,
-
-8,4,8,4,
-4,2,1,1,2,1,1,12,
-4,4,4,4,4,4,
-4,16,4,
-
-4,4,4,4,4,4,
-4,4,4,12,
-4,4,4,4,4,4,
-4,4,4,12,
-
-4,4,4,4,4,4,
-2,1,1,2,1,1,4,8,4,
-2,6,4,2,6,4,
-2,1,1,16,4,
-
-4,8,4,4,4,
-4,16,4,
-4,8,4,4,4,
-4,20,
-};
-
-int speed=90;  //higher value, slower notes
-// ____initialize music play tool____
-
-// ____setup music play tool____
-void setup() {
-  Serial.begin(9600);
 }
-// ____setup music play tool____
 
-// music play tool function
-void playmusic(){
+void setup()
+{
+  mySoftwareSerial.begin(9600);
+  Serial.begin(115200);
   
-  for (int thisNote = 0; melody[thisNote]!=-1; thisNote++) {
+  Serial.println();
+  Serial.println(F("DFRobot DFPlayer Mini Demo"));
+  Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
   
-  int noteDuration = speed*noteDurations[thisNote];
-  tone(3, melody[thisNote],noteDuration*.95);
-  Serial.println(melody[thisNote]);
+  if (!myDFPlayer.begin(mySoftwareSerial)) {  //Use softwareSerial to communicate with mp3.
+    Serial.println(F("Unable to begin:"));
+    Serial.println(F("1.Please recheck the connection!"));
+    Serial.println(F("2.Please insert the SD card!"));
+    while(true);
+  }
+  Serial.println(F("DFPlayer Mini online."));
   
-  delay(noteDuration);
+  myDFPlayer.volume(30);  //Set volume value. From 0 to 30
+  myDFPlayer.play(1);  //Play the first mp3
+}
+
+void loop()
+{
+  static unsigned long timer = millis();
   
-  noTone(3);
+  if (millis() - timer > 3000) {
+    timer = millis();
+    //myDFPlayer.next();  //Play next mp3 every 3 second.
+  }
+  
+  if (myDFPlayer.available()) {
+    printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
   }
 }
-// music play tool function
 
-void loop() {
-  playmusic();
-}
+
+/*
+
+*/
+
