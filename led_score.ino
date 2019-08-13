@@ -3,45 +3,203 @@
     #include <stdlib.h> 
     #include <time.h>
   
-    // Which pin on the Arduino is connected to the NeoPixels?
-    // On a Trinket or Gemma we suggest changing this to 1:
-    #define PIN 6 //LED PIN
-     
+    //Define LED Pins:
+    #define LED_PIN 8 //LED PIN
+    #define UP_LED_PIN 12 //LED PIN 2
+
+
+    //Define Fans:
+    #define FAN_START 3
+    #define FAN_DOWN 5
+    #define FAN_LEFT 6
+    #define FAN_RIGHT 11
+    
     // How many NeoPixels are attached to the Arduino?
-    #define N_LEDS 60
+    #define N_LEDS 25
+
+    
+    int currentMillis = 0;
+    int oldMillisLeft = 0;
+    int oldMillisRight = 0;
+
+
+//------------------------------------------------------------------------------
+    int fanVersion = 0;
+
+//------------------------------------------------------------------------------    
     int score = 0;
 
-    int isObstaclePin = 7; // This is our input pin
-    int isObstacle = HIGH; // HIGH MEANS NO OBSTACLE
+    //Define Lichtschranken:
+    int badSensorPin = 2; 
+    int leftSensorPin = 4;
+    int upSensorPin = 10;
+   
+    int badSensor = HIGH;
+    int leftSensor = HIGH;
+    int upSensor = HIGH;
+
+    //micro sensors:
+    int micLeft_pin = A5;
+    int micRight_pin = A4;
+    
+    int sensorValueLeft = 0;
+    int sensorValueRight = 0;
+    
      
     // Declare our NeoPixel strip object:
-    Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_LEDS, PIN, NEO_GRB + NEO_KHZ800);
+    Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
+    Adafruit_NeoPixel strip_up = Adafruit_NeoPixel(N_LEDS, UP_LED_PIN, NEO_GRB + NEO_KHZ800);
 
     void setup() {
-      srand(time(NULL));
+
+      //Set up Strip 1:
       strip.begin();
       strip.clear();
       strip.show();
-      pinMode(isObstaclePin, INPUT);
-      Serial.begin(9600);   
+
+      //Set up Strip 2:
+      strip_up.begin();
+      strip_up.clear();
+      strip_up.show();
+      
+      pinMode(badSensorPin, INPUT);
+      pinMode(leftSensorPin, INPUT);
+      pinMode(upSensorPin, INPUT);
+      
+      Serial.begin(9600);
     }
 
   
     void loop(){
-      isObstacle = digitalRead(isObstaclePin);
-      if (isObstacle == LOW) {
-        Serial.println("OBSTACLE!!, OBSTACLE!!");
+      //Serial.print(sensorValue);
+      currentMillis = millis();
+      sensorValueLeft = analogRead(micLeft_pin);
+      sensorValueRight = analogRead(micRight_pin);
+
+      updateLeftFan();
+      updateRightFan();
+      //analogWrite(FAN_DOWN, 255);
+      analogWrite(FAN_START, 255);
+      
+      int badSensor = digitalRead(badSensorPin);
+      int leftSensor = digitalRead(leftSensorPin);
+      int upSensor = digitalRead(upSensorPin);
+
+      if(upSensor == LOW && fanVersion==0){
+        Serial.println("Sensor up!\n");
         score = score + 1;
-        setScore(score);
+        setScore(score, 0);
       }
+
+      if(leftSensor == LOW&&fanVersion==0){
+        Serial.println("Sensor left!\n");
+        score = score + 1;
+        setScore(score, 0);
+      }
+      //Check if badObstacle was triggered:
+      if (badSensor == LOW&&fanVersion==0) {
+        Serial.println("Bad Sensor!\n");
+        if(score == 0){
+          //setScore(score, 1);
+          strip.clear();
+          return;
+        }
+        score = score - 1;
+        Serial.println(score);
+        Serial.println("COLORWIPE\n");
+        setScore(score, 1);
+        colorWipe(strip.Color(  255, 0,   0), 10);
+        strip.clear();
+
+      }
+      
+    }
+
+    void updateLeftFan()
+    {
+      //Serial.println(sensorValue);
+      if (sensorValueLeft > 150)
+      {
+        oldMillisLeft = millis();
+        delay(20);
+      }
+      if ((millis()-oldMillisLeft)<2000)
+      {
+        //Serial.println("FAST LEFT\n");
+        analogWrite(FAN_LEFT, 255);
+        return;
+      }
+        analogWrite(FAN_LEFT, 100);
+      
+    }
+
+    void updateRightFan()
+    {
+      //Serial.println(sensorValueRight);
+      //Serial.println(sensorValue);
+      if (sensorValueRight > 150)
+      {
+        oldMillisRight = millis();
+        delay(20);
+      }
+      if ((millis()-oldMillisRight)<2000)
+      {
+        //Serial.println("FAST RIGHT\n");
+        analogWrite(FAN_RIGHT, 255);
+        return;
+      }
+        analogWrite(FAN_RIGHT, 100);
+      
     }
     
-    void setScore(int score)
+    void setScore(int theScore, int badSensor)
     {
-      for(int i=0; i<score; i++)
+      strip_up.clear();
+      if(theScore == 24){
+        theaterChaseRainbow(50);
+        strip_up.clear();
+        score=0;
+        return;
+      }
+      for(int i=0; i<theScore; i++)
       {
-        strip.setPixelColor(i, 255, 0, 0);
-        strip.show();
-      }     
-      delay(500);
+        strip_up.setPixelColor(i, 0, 255, 0);
+        strip_up.show();
+        //tone(3, 1000, 1000);
+      }   
+      if(badSensor == 0){
+          delay(700);
+      }
+      
   }
+
+
+  void theaterChaseRainbow(int wait) {
+  int firstPixelHue = 0;     // First pixel starts at red (hue 0)
+  for(int a=0; a<30; a++) {  // Repeat 30 times...
+    for(int b=0; b<3; b++) { //  'b' counts from 0 to 2...
+      strip_up.clear();         //   Set all pixels in RAM to 0 (off)
+      // 'c' counts up from 'b' to end of strip in increments of 3...
+      for(int c=b; c<strip.numPixels(); c += 3) {
+        // hue of pixel 'c' is offset by an amount to make one full
+        // revolution of the color wheel (range 65536) along the length
+        // of the strip (strip.numPixels() steps):
+        int      hue   = firstPixelHue + c * 65536L / strip.numPixels();
+        uint32_t color = strip.gamma32(strip.ColorHSV(hue)); // hue -> RGB
+        strip_up.setPixelColor(c, color); // Set pixel 'c' to value 'color'
+      }
+      strip_up.show();                // Update strip with new contents
+      delay(wait);                 // Pause for a moment
+      firstPixelHue += 65536 / 90; // One cycle of color wheel over 90 frames
+    }
+  }
+}
+
+void colorWipe(uint32_t color, int wait) {
+  for(int i=0; i<=strip.numPixels(); i++) { // For each pixel in strip...
+    strip.setPixelColor(i, color);         //  Set pixel's color (in RAM)
+    strip.show();                          //  Update strip to match
+    delay(wait);                           //  Pause for a moment
+  }
+  strip.clear();
+}
