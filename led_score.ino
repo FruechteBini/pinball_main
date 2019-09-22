@@ -11,11 +11,17 @@
     //Define Fans:
     #define FAN_START 3
     #define FAN_DOWN 5
-    #define FAN_LEFT 6
-    #define FAN_RIGHT 11
+    #define FAN_LEFT 11
+    #define FAN_RIGHT 6
     
     // How many NeoPixels are attached to the Arduino?
     #define N_LEDS 25
+
+    // ____initialize Servo tool____
+    #include <Servo.h>
+    Servo myservo;  // create servo object to control a servo
+    int potpin = 0;  // analog pin used to connect the potentiometer
+    int valpin;    // variable to read the value from the analog pin
 
     
     int currentMillis = 0;
@@ -24,7 +30,7 @@
 
 
 //------------------------------------------------------------------------------
-    int fanVersion = 0;
+    int fanVersion = 1;
 
 //------------------------------------------------------------------------------    
     int score = 0;
@@ -61,6 +67,8 @@
       strip_up.begin();
       strip_up.clear();
       strip_up.show();
+
+      myservo.attach(9);  // attaches the servo on pin 9 to the servo object
       
       pinMode(badSensorPin, INPUT);
       pinMode(leftSensorPin, INPUT);
@@ -71,6 +79,9 @@
 
   
     void loop(){
+      //run the servo:
+      runServo(0,50);
+      
       //Serial.print(sensorValue);
       currentMillis = millis();
       sensorValueLeft = analogRead(micLeft_pin);
@@ -78,8 +89,9 @@
 
       updateLeftFan();
       updateRightFan();
-      //analogWrite(FAN_DOWN, 255);
+      analogWrite(FAN_DOWN, 100);
       analogWrite(FAN_START, 255);
+      //analogWrite(FAN_RIGHT, 255);
       
       int badSensor = digitalRead(badSensorPin);
       int leftSensor = digitalRead(leftSensorPin);
@@ -87,13 +99,13 @@
 
       if(upSensor == LOW && fanVersion==0){
         Serial.println("Sensor up!\n");
-        score = score + 1;
+        score = score + 2;
         setScore(score, 0);
       }
 
       if(leftSensor == LOW&&fanVersion==0){
         Serial.println("Sensor left!\n");
-        score = score + 1;
+        score = score + 3;
         setScore(score, 0);
       }
       //Check if badObstacle was triggered:
@@ -129,13 +141,13 @@
         analogWrite(FAN_LEFT, 255);
         return;
       }
-        analogWrite(FAN_LEFT, 100);
+        analogWrite(FAN_LEFT, 0);
       
     }
 
     void updateRightFan()
     {
-      //Serial.println(sensorValueRight);
+      Serial.println(sensorValueRight);
       //Serial.println(sensorValue);
       if (sensorValueRight > 150)
       {
@@ -148,7 +160,7 @@
         analogWrite(FAN_RIGHT, 255);
         return;
       }
-        analogWrite(FAN_RIGHT, 100);
+        analogWrite(FAN_RIGHT, 0);
       
     }
     
@@ -202,4 +214,11 @@ void colorWipe(uint32_t color, int wait) {
     delay(wait);                           //  Pause for a moment
   }
   strip.clear();
+}
+
+void runServo(int startAngle,int endAngle){
+  valpin = analogRead(potpin);            // reads the value of the potentiometer (value between 0 and 1023)
+  valpin = map(valpin, 0, 1023, startAngle, endAngle);     // scale it to use it with the servo (value between startAngle and endAngle)
+  myservo.write(valpin);                  // sets the servo position according to the scaled value
+  delay(15);                           // waits for the servo to get there
 }

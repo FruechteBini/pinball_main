@@ -1,3 +1,5 @@
+/*
+
 //speaker connected to pin 3 and GND.
 
 // ____initialize music play tool____
@@ -88,3 +90,6 @@ void playmusic(){
 void loop() {
   playmusic();
 }
+
+
+*/

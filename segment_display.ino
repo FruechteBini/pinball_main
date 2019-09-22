@@ -18,7 +18,7 @@
  * connect it to the digital pins of the Arduino (not necessary if you are
  * using a 3.3V variant of the Arduino, such as Sparkfun's Arduino Pro).
  */
-
+/*
 // ____initialize display tool____
 #include <PCD8544.h>
 
@@ -202,7 +202,7 @@ void LcdWrite(byte dc, byte data)
  * gotoXY routine to position cursor
  * x - range: 0 to 84
  * y - range: 0 to 5
- */
+ * 
 void gotoXY(int x, int y)
 {
   LcdWrite( 0, 0x80 | x);  // Column.
@@ -285,3 +285,4 @@ void setup() {
 void loop() {
   displayWithScore(0);
 }
+*/
